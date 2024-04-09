@@ -10,22 +10,22 @@ contract MFAOperations is UserRegistration {
     event MFANotification(address indexed user, address indexed dappAddress, bytes32 transactionId);
     event MFAVerified(address indexed user, bool isVerified);
 
-    modifier onlyRegistered() {
-        require(isRegistered[msg.sender], "User not registered");
+    modifier onlyRegistered(address user) {
+        require(isRegistered[user], "User not registered");
         _;
     }
 
-    function initiateMFA(address dappAddress) external onlyRegistered {
+    function initiateMFA(address user,address dappAddress) external onlyRelayer onlyRegistered(dappAddress) {
         require(dappAddress != address(0), "Invalid DApp address");
-        bytes32 transactionId = keccak256(abi.encodePacked(block.timestamp, msg.sender, dappAddress));
-        mfaRequests[msg.sender] = transactionId;
-        emit MFANotification(msg.sender, dappAddress, transactionId);
+        bytes32 transactionId = keccak256(abi.encodePacked(block.timestamp, user, dappAddress));
+        mfaRequests[user] = transactionId;
+        emit MFANotification(user, dappAddress, transactionId);
     }
-        function verifyMFA(bytes32 transactionId, bytes memory signature) external onlyRegistered {
-        require(isRegistered[msg.sender], "User is not registered");
-        require(verifySignature(transactionId, signature, msg.sender), "Invalid signature");
-        emit MFAVerified(msg.sender, true);
-        delete mfaRequests[msg.sender];
+        function verifyMFA(address user,bytes32 transactionId, bytes memory signature) external onlyRelayer onlyRegistered(user) {
+        require(isRegistered[user], "User is not registered");
+        require(verifySignature(transactionId, signature, user), "Invalid signature");
+        emit MFAVerified(user, true);
+        delete mfaRequests[user];
     }
 
 
